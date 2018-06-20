@@ -89,21 +89,21 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 		errs = packer.MultiErrorAppend(errs,
 			errors.New("fab_tasks must not be empty"))
 	}
-	err = validateFileConfig(p.config.FabFile, "fab_file", true)
+	err = validateFileConfig(p.config.FabFile, "fab_file", true, true)
 	if err != nil {
 		errs = packer.MultiErrorAppend(errs, err)
 	}
 
 	// Check that the authorized key file exists
 	if len(p.config.SSHAuthorizedKeyFile) > 0 {
-		err = validateFileConfig(p.config.SSHAuthorizedKeyFile, "ssh_authorized_key_file", true)
+		err = validateFileConfig(p.config.SSHAuthorizedKeyFile, "ssh_authorized_key_file", true, false)
 		if err != nil {
 			log.Println(p.config.SSHAuthorizedKeyFile, "does not exist")
 			errs = packer.MultiErrorAppend(errs, err)
 		}
 	}
 	if len(p.config.SSHHostKeyFile) > 0 {
-		err = validateFileConfig(p.config.SSHHostKeyFile, "ssh_host_key_file", true)
+		err = validateFileConfig(p.config.SSHHostKeyFile, "ssh_host_key_file", true, false)
 		if err != nil {
 			log.Println(p.config.SSHHostKeyFile, "does not exist")
 			errs = packer.MultiErrorAppend(errs, err)
@@ -326,7 +326,7 @@ func (p *Provisioner) executeFabric(ui packer.Ui, comm packer.Communicator, priv
 	return nil
 }
 
-func validateFileConfig(name string, config string, req bool) error {
+func validateFileConfig(name string, config string, req bool, allowDir bool) error {
 	if req {
 		if name == "" {
 			return fmt.Errorf("%s must be specified.", config)
@@ -335,7 +335,7 @@ func validateFileConfig(name string, config string, req bool) error {
 	info, err := os.Stat(name)
 	if err != nil {
 		return fmt.Errorf("%s: %s is invalid: %s", config, name, err)
-	} else if info.IsDir() {
+	} else if info.IsDir() && !allowDir {
 		return fmt.Errorf("%s: %s must point to a file", config, name)
 	}
 	return nil
